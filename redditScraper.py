@@ -56,7 +56,7 @@ def main():
         return_topics.append(topic)
 
     print(json.dumps(return_topics))
-    # sys.stdout.flush()
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     main()

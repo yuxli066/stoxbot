@@ -75,7 +75,7 @@ function pennyStockScrape(args, command) {
     };
 
     var allTopics = [];
-    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '100']);
+    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '50']);
     pythonProcess.stdout.on('data', function (data) {
         console.log('Pipe data from python script ...');
         allTopics.push(data);
@@ -96,7 +96,7 @@ function pennyStockScrape(args, command) {
                 };
             allFields.push(fieldObj);
         }
-        discordEmbedObject.fields = allFields;
+        discordEmbedObject.fields = allFields.slice(0,10);
         command.channel.send({ embed: discordEmbedObject });
     });
 }
