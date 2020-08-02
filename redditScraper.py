@@ -46,8 +46,17 @@ def main():
         max_topics=int(sys.argv[3])
 
     topics = get_subreddit_topics(subred,subred_type,max_topics)
-    for i in topics:
-        print(i.title, i.url)
+    return_topics = []
+    for item in topics:
+        topic = {
+            'title': item.title,
+            'num_comments': item.num_comments,
+            'url': item.url
+        }
+        return_topics.append(topic)
+
+    print(json.dumps(return_topics))
+    # sys.stdout.flush()
 
 if __name__ == "__main__":
     main()

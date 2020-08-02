@@ -3,6 +3,8 @@
 // Pennies Text: 732733861301190767
 const discord = require('discord.js');
 const client = new discord.Client();
+// spawn child process python
+const {spawn} = require('child_process');
 
 client.on('ready', () => {
     console.log('Connected as ' + client.user.tag);
@@ -57,11 +59,48 @@ function helpCommand(arguments, command) {
     }
     command.channel.send('It looks like you need help with: ' + arguments);
 }
+
 // Penny stock command function
 function pennyStockScrape(args, command) {
-    console.log('scraping for hottest reddit penny stocks');
-    // scraper here
+    console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
+    let discordEmbedObject = {
+        color: 0x0099ff,
+        title: 'Top 10 Hottest Penny Stock Topics',
+        fields: [],
+        timestamp: new Date(),
+        footer: {
+            text: 'Scaper still being refined',
+            icon_url: 'https://i.imgur.com/wSTFkRM.png',
+        },
+    };
+
+    var allTopics = [];
+    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '10']);
+    pythonProcess.stdout.on('data', function (data) {
+        console.log('Pipe data from python script ...');
+        allTopics.push(data);
+    });
+    pythonProcess.on('close', (code) => {
+        let allTopicsJson = JSON.parse(allTopics);
+        let allFields = [];
+        // sort by num num comments
+        allTopicsJson.sort((a,b)=>{
+            return b.num_comments - a.num_comments;
+        });
+        for (let i = 0; i < allTopicsJson.length; ++i) {
+            let fieldObj =
+                {
+                    name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
+                    value: allTopicsJson[i].url,
+                    inline: false,
+                };
+            allFields.push(fieldObj);
+        }
+        discordEmbedObject.fields = allFields;
+        command.channel.send({ embed: discordEmbedObject });
+    });
 }
+
 // Valorant command function
 // function valorantCommand (args, command) {
 //
