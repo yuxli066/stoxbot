@@ -23,7 +23,9 @@ client.on('message',(received) => {
     if (received.author === client.user)
         return;
     if (received.content.startsWith('!')) { processCommand(received); }
-    else { processMessage(received); }
+    else {
+        if (received.content.includes('@stoxBot')) { processMessage(received); }
+    }
 });
 
 // function to process messages
@@ -42,10 +44,12 @@ function processCommand(receivedCommand) {
     switch (primaryCommand) {
         case 'Help':
             return helpCommand(args, receivedCommand);
-        case 'Pennies':
+        case 'pennystocks':
             return pennyStockScrape(args, receivedCommand);
+        case 'wallstreetbets':
+            return wsb(args, receivedCommand);
         case 'Valorant':
-            return valorantHelp(args,receivedCommand);
+            return valorantCommand(args,receivedCommand);
         default:
             break;
     }
@@ -101,9 +105,49 @@ function pennyStockScrape(args, command) {
     });
 }
 
+// Penny stock command function
+function wsb(args, command) {
+    console.log('scraping reddit wsb');
+    let discordEmbedObject = {
+        color: 0x0099ff,
+        title: 'Top 10 Hottest WSB Topics',
+        fields: [],
+        timestamp: new Date(),
+        footer: {
+            text: 'Scaper still being refined',
+            icon_url: 'https://i.imgur.com/wSTFkRM.png',
+        }
+    };
+
+    var allTopics = [];
+    const pythonProcess = spawn('python', ['redditScraper.py','wallstreetbets', 'hot', '50']);
+    pythonProcess.stdout.on('data', function (data) {
+        console.log('Pipe data from python script ...');
+        allTopics.push(data);
+    });
+    pythonProcess.on('close', (code) => {
+        let allTopicsJson = JSON.parse(allTopics);
+        let allFields = [];
+        // sort by num num comments
+        allTopicsJson.sort((a,b)=>{
+            return b.num_comments - a.num_comments;
+        });
+        for (let i = 0; i < allTopicsJson.length; ++i) {
+            let fieldObj =
+                {
+                    name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
+                    value: allTopicsJson[i].url,
+                    inline: false,
+                };
+            allFields.push(fieldObj);
+        }
+        discordEmbedObject.fields = allFields.slice(0,10);
+        command.channel.send({ embed: discordEmbedObject });
+    });
+}
 // Valorant command function
-// function valorantCommand (args, command) {
-//
-// }
+function valorantCommand (args, command) {
+    command.channel.send('https://www.twitch.tv/wardell');
+}
 
 client.login('NzMyNzI1MjgzMDI2NjMyNzY1.Xw4xmA.DGjPJ4oU8eO4QbK4rgM1e8g-tRk');
