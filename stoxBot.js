@@ -71,11 +71,11 @@ function pennyStockScrape(args, command) {
         footer: {
             text: 'Scaper still being refined',
             icon_url: 'https://i.imgur.com/wSTFkRM.png',
-        },
+        }
     };
 
     var allTopics = [];
-    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '10']);
+    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '100']);
     pythonProcess.stdout.on('data', function (data) {
         console.log('Pipe data from python script ...');
         allTopics.push(data);
