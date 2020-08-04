@@ -44,13 +44,10 @@ function processCommand(receivedCommand) {
     switch (primaryCommand) {
         case 'Help':
             return helpCommand(args, receivedCommand);
-        case 'pennystocks':
-            return pennyStockScrape(args, receivedCommand);
-        case 'wallstreetbets':
-            return wsb(args, receivedCommand);
         case 'Valorant':
             return valorantCommand(args,receivedCommand);
         default:
+            return redditScrape(args, receivedCommand, primaryCommand);
             break;
     }
 }
@@ -64,12 +61,12 @@ function helpCommand(arguments, command) {
     command.channel.send('It looks like you need help with: ' + arguments);
 }
 
-// Penny stock command function
-function pennyStockScrape(args, command) {
+// Generic scrape Reddit Function
+function redditScrape(args, command, subredditName) {
     console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
     let discordEmbedObject = {
         color: 0x0099ff,
-        title: 'Top 10 Hottest Penny Stock Topics',
+        title: 'Top 10 Hottest ' + subredditName + ' Topics',
         fields: [],
         timestamp: new Date(),
         footer: {
@@ -79,7 +76,7 @@ function pennyStockScrape(args, command) {
     };
 
     var allTopics = [];
-    const pythonProcess = spawn('python', ['redditScraper.py','pennystocks', 'hot', '50']);
+    const pythonProcess = spawn('python', ['redditScraper.py', subredditName , 'hot', '50']);
     pythonProcess.stdout.on('data', function (data) {
         console.log('Pipe data from python script ...');
         allTopics.push(data);
@@ -105,46 +102,6 @@ function pennyStockScrape(args, command) {
     });
 }
 
-// Penny stock command function
-function wsb(args, command) {
-    console.log('scraping reddit wsb');
-    let discordEmbedObject = {
-        color: 0x0099ff,
-        title: 'Top 10 Hottest WSB Topics',
-        fields: [],
-        timestamp: new Date(),
-        footer: {
-            text: 'Scaper still being refined',
-            icon_url: 'https://i.imgur.com/wSTFkRM.png',
-        }
-    };
-
-    var allTopics = [];
-    const pythonProcess = spawn('python', ['redditScraper.py','wallstreetbets', 'hot', '50']);
-    pythonProcess.stdout.on('data', function (data) {
-        console.log('Pipe data from python script ...');
-        allTopics.push(data);
-    });
-    pythonProcess.on('close', (code) => {
-        let allTopicsJson = JSON.parse(allTopics);
-        let allFields = [];
-        // sort by num num comments
-        allTopicsJson.sort((a,b)=>{
-            return b.num_comments - a.num_comments;
-        });
-        for (let i = 0; i < allTopicsJson.length; ++i) {
-            let fieldObj =
-                {
-                    name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
-                    value: allTopicsJson[i].url,
-                    inline: false,
-                };
-            allFields.push(fieldObj);
-        }
-        discordEmbedObject.fields = allFields.slice(0,10);
-        command.channel.send({ embed: discordEmbedObject });
-    });
-}
 // Valorant command function
 function valorantCommand (args, command) {
     command.channel.send('https://www.twitch.tv/wardell');
