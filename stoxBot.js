@@ -85,9 +85,9 @@ function redditScrape(args, command, subredditName) {
     var allTopics = [];
     const pythonProcess = spawn('python', ['redditScraper.py', subredditName , 'hot', '50']);
     pythonProcess.stdout.on('data', function (data) {
-        console.log('Pipe data from python script ...');
+        console.log('Running script to grab reddit hot topics');
         allTopics.push(data);
-        console.log(allTopics)
+        // console.log(allTopics)
     });
     pythonProcess.on('close', (code) => {
         let allTopicsJson = JSON.parse(allTopics);
