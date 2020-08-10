@@ -41,17 +41,21 @@ function processCommand(receivedCommand) {
     let primaryCommand = splitCommand[0];
     let args = splitCommand.slice(1);
 
-    switch (primaryCommand) {
-        case 'Help':
+    switch (primaryCommand.toLowerCase()) {
+        case 'help':
             return helpCommand(args, receivedCommand);
-        case 'Valorant':
+        case 'valorant':
             return valorantCommand(args,receivedCommand);
+        case 'volume':
+            return scrapeVolume(args, receivedCommand);
         default:
             return redditScrape(args, receivedCommand, primaryCommand);
             break;
     }
 }
-
+// function runPythonScript (scriptPath) {
+//
+// }
 // help command function
 function helpCommand(arguments, command) {
     if (arguments.length === 0) {
@@ -60,7 +64,10 @@ function helpCommand(arguments, command) {
     }
     command.channel.send('It looks like you need help with: ' + arguments);
 }
-
+// Valorant command function
+function valorantCommand (args, command) {
+    command.channel.send('https://www.twitch.tv/wardell');
+}
 // Generic scrape Reddit Function
 function redditScrape(args, command, subredditName) {
     console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
@@ -80,6 +87,7 @@ function redditScrape(args, command, subredditName) {
     pythonProcess.stdout.on('data', function (data) {
         console.log('Pipe data from python script ...');
         allTopics.push(data);
+        console.log(allTopics)
     });
     pythonProcess.on('close', (code) => {
         let allTopicsJson = JSON.parse(allTopics);
@@ -101,10 +109,46 @@ function redditScrape(args, command, subredditName) {
         command.channel.send({ embed: discordEmbedObject });
     });
 }
+// Run volume scraper script
+function scrapeVolume(args, command) {
+    console.log('Running python script to scrape unusual volumes');
+    const pythonProcess = spawn('python', ['./volumeScraper/market_scanner.py']);
+    let allTickers = [];
+    pythonProcess.stdout.on('data', function (data) {
+        console.log('Running market scanner script...');
+        allTickers.push(data);
+    });
 
-// Valorant command function
-function valorantCommand (args, command) {
-    command.channel.send('https://www.twitch.tv/wardell');
+    pythonProcess.stderr.on('data', function (data) {
+        console.log('stderr: ' + data.toString());
+    });
+
+    pythonProcess.on('close', (code) => {
+        console.log('child process exited with code ' + code.toString());
+        allTickers = JSON.parse(allTickers);
+        let totalTimeScan = Math.round(Number(allTickers[allTickers.length - 1]) / 10) * 10;
+        let allFields = [];
+        let discordEmbedObject = {
+            color: 0x0099ff,
+            title: 'Tickers with Unusual Volume: ',
+            fields: [],
+            timestamp: new Date(),
+            footer: {
+                text: 'Time took to scan: ' + totalTimeScan.toString() + 's'
+            }
+        };
+        for (let i = 0; i < allTickers.length - 1; ++i) {
+            let fieldObj =
+                {
+                    name: 'Ticker Name: ' + allTickers[i]['Ticker'],
+                    value: 'Volume: ' + allTickers[i]['TargetVolume'] + '\n Date: ' + allTickers[i]['TargetDate'],
+                    inline: false,
+                };
+            allFields.push(fieldObj);
+        }
+        discordEmbedObject.fields = allFields;
+        command.channel.send({ embed: discordEmbedObject });
+    });
 }
 
 client.login('NzMyNzI1MjgzMDI2NjMyNzY1.Xw4xmA.DGjPJ4oU8eO4QbK4rgM1e8g-tRk');

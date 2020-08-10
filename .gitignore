@@ -1,6 +1,9 @@
 # env vars
 .env
 
+# pycache
+*/__pycache__
+
 # webstorm
 .idea
 
