@@ -38,10 +38,10 @@ function processMessage(message) {
 function processCommand(receivedCommand) {
     let fullCommand = receivedCommand.content.substr(1);
     let splitCommand = fullCommand.split(' ');
-    let primaryCommand = splitCommand[0];
+    let primaryCommand = splitCommand[0].toLowerCase();
     let args = splitCommand.slice(1);
-
-    switch (primaryCommand.toLowerCase()) {
+    console.log('Running Command: ',primaryCommand);
+    switch (primaryCommand) {
         case 'help':
             return helpCommand(args, receivedCommand);
         case 'valorant':
@@ -87,26 +87,35 @@ function redditScrape(args, command, subredditName) {
     pythonProcess.stdout.on('data', function (data) {
         console.log('Running script to grab reddit hot topics');
         allTopics.push(data);
-        // console.log(allTopics)
     });
+
+    pythonProcess.stderr.on('data', function (data) {
+        console.log('stderr: ' + data.toString());
+    });
+
     pythonProcess.on('close', (code) => {
         let allTopicsJson = JSON.parse(allTopics);
         let allFields = [];
         // sort by num num comments
-        allTopicsJson.sort((a,b)=>{
-            return b.num_comments - a.num_comments;
-        });
-        for (let i = 0; i < allTopicsJson.length; ++i) {
-            let fieldObj =
-                {
-                    name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
-                    value: allTopicsJson[i].url,
-                    inline: false,
-                };
-            allFields.push(fieldObj);
+        if (allTopicsJson.length > 0) {
+            allTopicsJson.sort((a, b) => {
+                return b.num_comments - a.num_comments;
+            });
+            for (let i = 0; i < allTopicsJson.length; ++i) {
+                let fieldObj =
+                    {
+                        name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
+                        value: allTopicsJson[i].url,
+                        inline: false,
+                    };
+                allFields.push(fieldObj);
+            }
+            discordEmbedObject.fields = allFields.slice(0, 10);
+            command.channel.send({embed: discordEmbedObject});
         }
-        discordEmbedObject.fields = allFields.slice(0,10);
-        command.channel.send({ embed: discordEmbedObject });
+        else {
+            command.channel.send("Please double check to see if this subreddit exists!");
+        }
     });
 }
 // Run volume scraper script
