@@ -9,6 +9,9 @@
     "python-shell": "^1.0.6"
   },
   "devDependencies": {},
+  "scripts": {
+    "start": "node ./stoxBot.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yuxli066/stoxbot.git"
