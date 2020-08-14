@@ -98,6 +98,7 @@ function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
         pythonProcess.on('close', (code) => {
             if (allTopics.length > 0) {
                 let allTopicsJson = JSON.parse(allTopics);
+                console.log('allTopicsJson:',allTopicsJson);
                 let allFields = [];
                 allTopicsJson.sort((a, b) => {
                     return b.num_comments - a.num_comments;
