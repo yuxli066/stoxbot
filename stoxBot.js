@@ -95,10 +95,9 @@ function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
             console.log('stderr: ' + data.toString());
         });
         pythonProcess.on('close', (code) => {
-            let allTopicsJson = JSON.parse(allTopics);
-            let allFields = [];
-            // sort by num num comments
-            if (allTopicsJson.length > 0) {
+            if (allTopics.length > 0) {
+                let allTopicsJson = JSON.parse(allTopics);
+                let allFields = [];
                 allTopicsJson.sort((a, b) => {
                     return b.num_comments - a.num_comments;
                 });
