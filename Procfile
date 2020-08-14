@@ -1,2 +1,2 @@
-web: node stoxBot.js
+worker: node stoxBot.js
 pipinstall: pip install -r requirements.txt

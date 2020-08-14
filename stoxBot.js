@@ -90,11 +90,11 @@ function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
         pythonProcess.stdout.on('data', function (data) {
             console.log('Running script to grab reddit hot topics');
             allTopics.push(data);
+            console.log('All Topics:',allTopics);
         });
         pythonProcess.stderr.on('data', function (data) {
             console.log('stderr: ' + data.toString());
         });
-        console.log('All Topics:',allTopics);
         pythonProcess.on('close', (code) => {
             if (allTopics.length > 0) {
                 let allTopicsJson = JSON.parse(allTopics);
