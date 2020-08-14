@@ -12,6 +12,7 @@ const twmValorantId = process.env.twmValorantId;
 const wardellTwitchUrl = process.env.wardellTwitchUrl;
 client.login(discordAPIKey);
 
+// ------------- discord listeners -------------
 client.on('ready', () => {
     console.log('Connected as ' + client.user.tag);
     client.user.setActivity('Stox', {type: 'WATCHING'});
@@ -24,7 +25,6 @@ client.on('ready', () => {
     let generalTextChannel = client.channels.cache.get(stoxGeneralId);
     generalTextChannel.send('Hello Everyone!');
 });
-
 client.on('message',(received) => {
     // console.log('%s said \'%s\' in the discord \'%s\', channel: \'%s\' with id: \'%s\'', received.author.username, received.content, received.guild.name, received.channel.name, received.channel.id);
     let receivedChannel = received.channel.id;
@@ -32,18 +32,14 @@ client.on('message',(received) => {
     if (received.author === client.user)
         return;
     if (received.content.startsWith('!')) { processCommand(received,receivedChannel,replyChannel); }
-    else {
-        if (received.content.includes('@stoxBot')) { processMessage(received); }
-    }
+    else { if (received.content.includes('@stoxBot')) { processMessage(received); }}
 });
 
-// function to process messages
+// ------------- process messages and commands -------------
 function processMessage(message) {
     message.channel.send('I got your message, ' + message.author.toString() + ', I\'m just not sure what to say yet.');
     message.react('🙂');
 }
-
-// function to process commands
 function processCommand(receivedCommand,receivedChannel,replyChannel) {
     let fullCommand = receivedCommand.content.substr(1);
     let splitCommand = fullCommand.split(' ');
@@ -65,6 +61,8 @@ function processCommand(receivedCommand,receivedChannel,replyChannel) {
             return redditScrape(args, receivedCommand, primaryCommand,receivedChannel,replyChannel);
     }
 }
+
+// ------------- run python script, help command, scrape reddit, scrape unusual volumes, valorant -------------
 async function runPythonScript (scriptPath,arguments) {
     const pythonProcess = spawn('python', [scriptPath].concat(arguments));
     let retData = "", retError = "", parsedRetData = [];
@@ -76,7 +74,6 @@ async function runPythonScript (scriptPath,arguments) {
         parsedRetData = JSON.parse(retData.toString('utf8'));
     return parsedRetData
 }
-// help command function
 function helpCommand(arguments,command,replyChannel) {
     if (arguments.length === 0) {
         command.channel.send('I\'m not sure what you need help with. Try !Help [topic]');
@@ -84,7 +81,6 @@ function helpCommand(arguments,command,replyChannel) {
     }
     replyChannel.send('It looks like you need help with: ' + arguments);
 }
-// Generic scrape Reddit Function
 async function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
     if ([stoxGeneralId,omBotId,twmRedditScraperId].includes(receivedChannel)) {
         console.log('Running script to grab reddit hot topics');
@@ -116,19 +112,9 @@ async function redditScrape(args,command,subredditName,receivedChannel,replyChan
         } else { replyChannel.send("Please double check to see if this subreddit: '" + subredditName + "' exists!"); }
     }
 }
-// Run volume scraper script
-function scrapeVolume(args,command,replyChannel) {
+async function scrapeVolume(args,command,replyChannel) {
     console.log('Running python script to scrape unusual volumes');
-    const pythonProcess = spawnSync('python', ['./volumeScraper/market_scanner.py']);
-    let result = pythonProcess.stdout.toString('utf8');
-    let error = pythonProcess.stderr.toString('utf8');
-    let allTickers = [];
-    if (result)
-        allTickers = JSON.parse(result);
-    if (error) {
-        console.log('Error:',error);
-        process.exit(1);
-    }
+    let allTickers = await runPythonScript('./volumeScraper/market_scanner.py',[]);
     if (allTickers.length > 0) {
         let totalTimeScan = Math.round(Number(allTickers[allTickers.length - 1]) / 10) * 10;
         let allFields = [];
@@ -152,5 +138,4 @@ function scrapeVolume(args,command,replyChannel) {
         replyChannel.send({ embed: discordEmbedObject });
     }
 }
-// Valorant command function
 function valorantCommand (args,command,replyChannel) { replyChannel.send(wardellTwitchUrl); }
