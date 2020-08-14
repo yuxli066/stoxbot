@@ -10,7 +10,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node ./stoxBot.js"
+    "start": "pip install -r requirements.txt && node ./stoxBot.js"
   },
   "repository": {
     "type": "git",
