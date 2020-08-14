@@ -47,7 +47,7 @@ function processMessage(message) {
 function processCommand(receivedCommand,receivedChannel,replyChannel) {
     let fullCommand = receivedCommand.content.substr(1);
     let splitCommand = fullCommand.split(' ');
-    let primaryCommand = splitCommand[0].toLowerCase();
+    let primaryCommand = splitCommand[0].toLowerCase().trim();
     let args = splitCommand.slice(1);
     console.log('Running Command:',primaryCommand);
     switch (true) {
@@ -57,12 +57,25 @@ function processCommand(receivedCommand,receivedChannel,replyChannel) {
             return valorantCommand(args,receivedCommand,replyChannel);
         case (primaryCommand === 'volume' && [stoxGeneralId,omBotId,twmInsiderStoxBotId].includes(receivedChannel)):
             return scrapeVolume(args, receivedCommand,replyChannel);
+        case (!primaryCommand && [stoxGeneralId,omBotId,twmInsiderStoxBotId,twmValorantId,twmRedditScraperId].includes(receivedChannel)):
+            replyChannel.send("Please use a valid command!");
+            // tell user to use help and add in help command later
+            break;
         default:
             return redditScrape(args, receivedCommand, primaryCommand,receivedChannel,replyChannel);
     }
 }
-// function runPythonScript (scriptPath) {
-// }
+async function runPythonScript (scriptPath,arguments) {
+    const pythonProcess = spawn('python', [scriptPath].concat(arguments));
+    let retData = "", retError = "", parsedRetData = [];
+    for await (const chunk of pythonProcess.stdout) { retData += chunk; }
+    for await (const chunk of pythonProcess.stderr) { retError += chunk; }
+    const exitCode = await new Promise( (resolve, reject) => { pythonProcess.on('close', resolve); });
+    if( exitCode) {console.log( `subprocess error exit ${exitCode}, ${retError}`); }
+    if (retData.toString('utf8'))
+        parsedRetData = JSON.parse(retData.toString('utf8'));
+    return parsedRetData
+}
 // help command function
 function helpCommand(arguments,command,replyChannel) {
     if (arguments.length === 0) {
@@ -72,9 +85,9 @@ function helpCommand(arguments,command,replyChannel) {
     replyChannel.send('It looks like you need help with: ' + arguments);
 }
 // Generic scrape Reddit Function
-function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
+async function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
     if ([stoxGeneralId,omBotId,twmRedditScraperId].includes(receivedChannel)) {
-        console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
+        console.log('Running script to grab reddit hot topics');
         let discordEmbedObject = {
             color: 0x0099ff,
             title: 'Top 10 Hottest ' + subredditName + ' Topics',
@@ -85,58 +98,38 @@ function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
                 icon_url: 'https://i.imgur.com/wSTFkRM.png',
             }
         };
-        var allTopics = [];
-        const pythonProcess = spawn('python', ['redditScraper.py', subredditName, 'hot', '50']);
-        pythonProcess.stdout.on('data', function (data) {
-            console.log('Running script to grab reddit hot topics');
-            allTopics.push(data);
-            console.log('All Topics:',allTopics);
-        });
-        pythonProcess.stderr.on('data', function (data) {
-            console.log('stderr: ' + data.toString());
-        });
-        pythonProcess.on('close', (code) => {
-            if (allTopics.length > 0) {
-                let allTopicsJson = JSON.parse(allTopics);
-                console.log('allTopicsJson:',allTopicsJson);
-                let allFields = [];
-                allTopicsJson.sort((a, b) => {
-                    return b.num_comments - a.num_comments;
-                });
-                for (let i = 0; i < allTopicsJson.length; ++i) {
-                    let fieldObj =
-                        {
-                            name: allTopicsJson[i].title.substring(0,220) + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
-                            value: allTopicsJson[i].url,
-                            inline: false,
-                        };
-                    allFields.push(fieldObj);
-                }
-                discordEmbedObject.fields = allFields.slice(0, 10);
-                replyChannel.send({embed: discordEmbedObject});
-            } else {
-                replyChannel.send("Please double check to see if this subreddit exists!");
+        let allTopics = await runPythonScript('redditScraper.py', [subredditName, 'hot', '50']);
+        if (allTopics.length > 0) {
+            let allFields = [];
+            allTopics.sort((a, b) => { return b.num_comments - a.num_comments; });
+            for (let i = 0; i < allTopics.length; ++i) {
+                let fieldObj =
+                    {
+                        name: allTopics[i].title.substring(0,220) + ' --- Number of comments: ' + allTopics[i].num_comments,
+                        value: allTopics[i].url,
+                        inline: false,
+                    };
+                allFields.push(fieldObj);
             }
-        });
+            discordEmbedObject.fields = allFields.slice(0, 10);
+            replyChannel.send({embed: discordEmbedObject});
+        } else { replyChannel.send("Please double check to see if this subreddit: '" + subredditName + "' exists!"); }
     }
 }
 // Run volume scraper script
 function scrapeVolume(args,command,replyChannel) {
     console.log('Running python script to scrape unusual volumes');
-    const pythonProcess = spawn('python', ['./volumeScraper/market_scanner.py']);
+    const pythonProcess = spawnSync('python', ['./volumeScraper/market_scanner.py']);
+    let result = pythonProcess.stdout.toString('utf8');
+    let error = pythonProcess.stderr.toString('utf8');
     let allTickers = [];
-    pythonProcess.stdout.on('data', function (data) {
-        console.log('Running market scanner script...');
-        allTickers.push(data);
-    });
-
-    pythonProcess.stderr.on('data', function (data) {
-        console.log('stderr: ' + data.toString());
-    });
-
-    pythonProcess.on('close', (code) => {
-        console.log('child process exited with code ' + code.toString());
-        allTickers = JSON.parse(allTickers);
+    if (result)
+        allTickers = JSON.parse(result);
+    if (error) {
+        console.log('Error:',error);
+        process.exit(1);
+    }
+    if (allTickers.length > 0) {
         let totalTimeScan = Math.round(Number(allTickers[allTickers.length - 1]) / 10) * 10;
         let allFields = [];
         let discordEmbedObject = {
@@ -144,9 +137,7 @@ function scrapeVolume(args,command,replyChannel) {
             title: 'Tickers with Unusual Volume: ',
             fields: [],
             timestamp: new Date(),
-            footer: {
-                text: 'Time took to scan: ' + totalTimeScan.toString() + 's'
-            }
+            footer: { text: 'Time took to scan: ' + totalTimeScan.toString() + 's' }
         };
         for (let i = 0; i < allTickers.length - 1; ++i) {
             let fieldObj =
@@ -159,7 +150,7 @@ function scrapeVolume(args,command,replyChannel) {
         }
         discordEmbedObject.fields = allFields;
         replyChannel.send({ embed: discordEmbedObject });
-    });
+    }
 }
 // Valorant command function
 function valorantCommand (args,command,replyChannel) { replyChannel.send(wardellTwitchUrl); }
