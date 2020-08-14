@@ -1,0 +1,25 @@
+{
+  "name": "stoxbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "stoxBot.js",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0",
+    "python-shell": "^1.0.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "build": "pip3 install -r ./volumeScraper/requirements.txt && npm install && node ./stoxBot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuxli066/stoxbot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yuxli066/stoxbot/issues"
+  },
+  "homepage": "https://github.com/yuxli066/stoxbot#readme"
+}
