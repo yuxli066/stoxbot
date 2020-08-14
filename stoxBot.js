@@ -94,6 +94,7 @@ function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
         pythonProcess.stderr.on('data', function (data) {
             console.log('stderr: ' + data.toString());
         });
+        console.log('All Topics:',allTopics);
         pythonProcess.on('close', (code) => {
             if (allTopics.length > 0) {
                 let allTopicsJson = JSON.parse(allTopics);
