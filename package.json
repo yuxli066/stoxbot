@@ -10,7 +10,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "build": "pip install -r ./volumeScraper/requirements.txt && npm install && node ./stoxBot.js"
+    "build": "pip install -r requirements.txt && npm install && node ./stoxBot.js"
   },
   "repository": {
     "type": "git",
