@@ -1,28 +1,37 @@
-// Text Channels Category: 732733792778715316
-// General Text: 732733792778715318
-// Pennies Text: 732733861301190767
 const discord = require('discord.js');
 const client = new discord.Client();
-// spawn child process python
 const {spawn} = require('child_process');
+require('dotenv').config();
+// Global Variables
+const discordAPIKey = process.env.discordAPIKey;
+const stoxGeneralId = process.env.stoxGeneralId;
+const omBotId = process.env.omBotId;
+const twmRedditScraperId = process.env.twmRedditScraperId;
+const twmInsiderStoxBotId = process.env.twmInsiderStoxBotId;
+const twmValorantId = process.env.twmValorantId;
+const wardellTwitchUrl = process.env.wardellTwitchUrl;
+client.login(discordAPIKey);
 
 client.on('ready', () => {
     console.log('Connected as ' + client.user.tag);
-    client.user.setActivity('Reddit', {type: 'WATCHING'});
+    client.user.setActivity('Stox', {type: 'WATCHING'});
     client.guilds.cache.forEach((guild) => {
         console.log(guild.name);
         guild.channels.cache.forEach((channel) => {
             console.log(` - Name:${channel.name} Type:${channel.type} Id:${channel.id}`);
         });
     });
-    let generalTextChannel = client.channels.cache.get('732733792778715318');
+    let generalTextChannel = client.channels.cache.get(stoxGeneralId);
     generalTextChannel.send('Hello Everyone!');
 });
 
 client.on('message',(received) => {
+    // console.log('%s said \'%s\' in the discord \'%s\', channel: \'%s\' with id: \'%s\'', received.author.username, received.content, received.guild.name, received.channel.name, received.channel.id);
+    let receivedChannel = received.channel.id;
+    let replyChannel = client.channels.cache.get(receivedChannel);
     if (received.author === client.user)
         return;
-    if (received.content.startsWith('!')) { processCommand(received); }
+    if (received.content.startsWith('!')) { processCommand(received,receivedChannel,replyChannel); }
     else {
         if (received.content.includes('@stoxBot')) { processMessage(received); }
     }
@@ -35,91 +44,84 @@ function processMessage(message) {
 }
 
 // function to process commands
-function processCommand(receivedCommand) {
+function processCommand(receivedCommand,receivedChannel,replyChannel) {
     let fullCommand = receivedCommand.content.substr(1);
     let splitCommand = fullCommand.split(' ');
     let primaryCommand = splitCommand[0].toLowerCase();
     let args = splitCommand.slice(1);
-    console.log('Running Command: ',primaryCommand);
-    switch (primaryCommand) {
-        case 'help':
-            return helpCommand(args, receivedCommand);
-        case 'valorant':
-            return valorantCommand(args,receivedCommand);
-        case 'volume':
-            return scrapeVolume(args, receivedCommand);
+    console.log('Running Command:',primaryCommand);
+    switch (true) {
+        case (primaryCommand === 'help' && [stoxGeneralId,omBotId].includes(receivedChannel)):
+            return helpCommand(args, receivedCommand,replyChannel);
+        case (primaryCommand === 'valorant' && [stoxGeneralId,omBotId,twmValorantId].includes(receivedChannel)):
+            return valorantCommand(args,receivedCommand,replyChannel);
+        case (primaryCommand === 'volume' && [stoxGeneralId,omBotId,twmInsiderStoxBotId].includes(receivedChannel)):
+            return scrapeVolume(args, receivedCommand,replyChannel);
         default:
-            return redditScrape(args, receivedCommand, primaryCommand);
-            break;
+            return redditScrape(args, receivedCommand, primaryCommand,receivedChannel,replyChannel);
     }
 }
 // function runPythonScript (scriptPath) {
 //
 // }
 // help command function
-function helpCommand(arguments, command) {
+function helpCommand(arguments,command,replyChannel) {
     if (arguments.length === 0) {
         command.channel.send('I\'m not sure what you need help with. Try !Help [topic]');
         return;
     }
-    command.channel.send('It looks like you need help with: ' + arguments);
-}
-// Valorant command function
-function valorantCommand (args, command) {
-    command.channel.send('https://www.twitch.tv/wardell');
+    replyChannel.send('It looks like you need help with: ' + arguments);
 }
 // Generic scrape Reddit Function
-function redditScrape(args, command, subredditName) {
-    console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
-    let discordEmbedObject = {
-        color: 0x0099ff,
-        title: 'Top 10 Hottest ' + subredditName + ' Topics',
-        fields: [],
-        timestamp: new Date(),
-        footer: {
-            text: 'Scaper still being refined',
-            icon_url: 'https://i.imgur.com/wSTFkRM.png',
-        }
-    };
-
-    var allTopics = [];
-    const pythonProcess = spawn('python', ['redditScraper.py', subredditName , 'hot', '50']);
-    pythonProcess.stdout.on('data', function (data) {
-        console.log('Running script to grab reddit hot topics');
-        allTopics.push(data);
-    });
-
-    pythonProcess.stderr.on('data', function (data) {
-        console.log('stderr: ' + data.toString());
-    });
-
-    pythonProcess.on('close', (code) => {
-        let allTopicsJson = JSON.parse(allTopics);
-        let allFields = [];
-        // sort by num num comments
-        if (allTopicsJson.length > 0) {
-            allTopicsJson.sort((a, b) => {
-                return b.num_comments - a.num_comments;
-            });
-            for (let i = 0; i < allTopicsJson.length; ++i) {
-                let fieldObj =
-                    {
-                        name: allTopicsJson[i].title + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
-                        value: allTopicsJson[i].url,
-                        inline: false,
-                    };
-                allFields.push(fieldObj);
+function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
+    if ([stoxGeneralId,omBotId,twmRedditScraperId].includes(receivedChannel)) {
+        console.log('scraping for hottest reddit penny stock posts sorted by number of comments');
+        let discordEmbedObject = {
+            color: 0x0099ff,
+            title: 'Top 10 Hottest ' + subredditName + ' Topics',
+            fields: [],
+            timestamp: new Date(),
+            footer: {
+                text: 'Scaper still being refined',
+                icon_url: 'https://i.imgur.com/wSTFkRM.png',
             }
-            discordEmbedObject.fields = allFields.slice(0, 10);
-            command.channel.send({embed: discordEmbedObject});
-        }
-        else {
-            command.channel.send("Please double check to see if this subreddit exists!");
-        }
-    });
+        };
+        var allTopics = [];
+        const pythonProcess = spawn('python', ['redditScraper.py', subredditName, 'hot', '50']);
+        pythonProcess.stdout.on('data', function (data) {
+            console.log('Running script to grab reddit hot topics');
+            allTopics.push(data);
+        });
+        pythonProcess.stderr.on('data', function (data) {
+            console.log('stderr: ' + data.toString());
+        });
+        pythonProcess.on('close', (code) => {
+            let allTopicsJson = JSON.parse(allTopics);
+            let allFields = [];
+            // sort by num num comments
+            if (allTopicsJson.length > 0) {
+                allTopicsJson.sort((a, b) => {
+                    return b.num_comments - a.num_comments;
+                });
+                for (let i = 0; i < allTopicsJson.length; ++i) {
+                    let fieldObj =
+                        {
+                            name: allTopicsJson[i].title.substring(0,220) + ' --- Number of comments: ' + allTopicsJson[i].num_comments,
+                            value: allTopicsJson[i].url,
+                            inline: false,
+                        };
+                    allFields.push(fieldObj);
+                }
+                discordEmbedObject.fields = allFields.slice(0, 10);
+                replyChannel.send({embed: discordEmbedObject});
+            } else {
+                replyChannel.send("Please double check to see if this subreddit exists!");
+            }
+        });
+    }
 }
 // Run volume scraper script
-function scrapeVolume(args, command) {
+function scrapeVolume(args,command,replyChannel) {
     console.log('Running python script to scrape unusual volumes');
     const pythonProcess = spawn('python', ['./volumeScraper/market_scanner.py']);
     let allTickers = [];
@@ -156,8 +158,8 @@ function scrapeVolume(args, command) {
             allFields.push(fieldObj);
         }
         discordEmbedObject.fields = allFields;
-        command.channel.send({ embed: discordEmbedObject });
+        replyChannel.send({ embed: discordEmbedObject });
     });
 }
-
-client.login('NzMyNzI1MjgzMDI2NjMyNzY1.Xw4xmA.DGjPJ4oU8eO4QbK4rgM1e8g-tRk');
+// Valorant command function
+function valorantCommand (args,command,replyChannel) { replyChannel.send(wardellTwitchUrl); }
