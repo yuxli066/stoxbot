@@ -62,7 +62,6 @@ function processCommand(receivedCommand,receivedChannel,replyChannel) {
     }
 }
 // function runPythonScript (scriptPath) {
-//
 // }
 // help command function
 function helpCommand(arguments,command,replyChannel) {
