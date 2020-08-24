@@ -3,6 +3,7 @@ const client = new discord.Client();
 const {spawn} = require('child_process');
 require('dotenv').config();
 // Global Variables
+const fuckBoisGeneralId = process.env.fuckBoisGeneralId;
 const discordAPIKey = process.env.discordAPIKey;
 const stoxGeneralId = process.env.stoxGeneralId;
 const omBotId = process.env.omBotId;
@@ -47,13 +48,13 @@ function processCommand(receivedCommand,receivedChannel,replyChannel) {
     let args = splitCommand.slice(1);
     console.log('Running Command:',primaryCommand);
     switch (true) {
-        case (primaryCommand === 'help' && [stoxGeneralId,omBotId].includes(receivedChannel)):
+        case (primaryCommand === 'help' && [fuckBoisGeneralId,stoxGeneralId,omBotId].includes(receivedChannel)):
             return helpCommand(args, receivedCommand,replyChannel);
-        case (primaryCommand === 'valorant' && [stoxGeneralId,omBotId,twmValorantId].includes(receivedChannel)):
+        case (primaryCommand === 'valorant' && [fuckBoisGeneralId,stoxGeneralId,omBotId,twmValorantId].includes(receivedChannel)):
             return valorantCommand(args,receivedCommand,replyChannel);
-        case (primaryCommand === 'volume' && [stoxGeneralId,omBotId,twmInsiderStoxBotId].includes(receivedChannel)):
+        case (primaryCommand === 'volume' && [fuckBoisGeneralId,stoxGeneralId,omBotId,twmInsiderStoxBotId].includes(receivedChannel)):
             return scrapeVolume(args, receivedCommand,replyChannel);
-        case (!primaryCommand && [stoxGeneralId,omBotId,twmInsiderStoxBotId,twmValorantId,twmRedditScraperId].includes(receivedChannel)):
+        case (!primaryCommand && [fuckBoisGeneralId,stoxGeneralId,omBotId,twmInsiderStoxBotId,twmValorantId,twmRedditScraperId].includes(receivedChannel)):
             replyChannel.send("Please use a valid command!");
             // tell user to use help and add in help command later
             break;
@@ -82,7 +83,7 @@ function helpCommand(arguments,command,replyChannel) {
     replyChannel.send('It looks like you need help with: ' + arguments);
 }
 async function redditScrape(args,command,subredditName,receivedChannel,replyChannel) {
-    if ([stoxGeneralId,omBotId,twmRedditScraperId].includes(receivedChannel)) {
+    if ([fuckBoisGeneralId,stoxGeneralId,omBotId,twmRedditScraperId].includes(receivedChannel)) {
         console.log('Running script to grab reddit hot topics');
         let discordEmbedObject = {
             color: 0x0099ff,
