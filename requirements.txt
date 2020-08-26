@@ -11,4 +11,6 @@ Frozen_Flask==0.15
 python_dateutil==2.8.1
 praw==7.1.0
 python-dotenv==0.14.0
-
+wheel==0.35.1
+yahoo-finance-1.4.0
+requests=2.22.0
